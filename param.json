@@ -1,0 +1,6 @@
+{
+    "aws_zip_location": "s3://your-s3-bucket-name/path/to/your/input.zip",
+    "expected_file_names": ["file1.zip", "file2.zip", "file3.zip"], // this is dynamic with prefix
+    "aws_unzip_location": "s3://your-s3-bucket-name/your-unzip-prefix/",
+    "expected_total_txt_files": 63
+}
