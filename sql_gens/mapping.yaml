@@ -1,0 +1,61 @@
+DMV_POLICY:
+  fields:
+    BUSINESS_UNIT_CD:
+      json_path: "businessUnit"
+    TRANS_CODE:
+      json_path: "transactionType"
+    RECORD_SOURCE:
+      json_path: "sourceSystem"
+    COMPANY_NAME:
+      json_path: "companyName"
+    NAIC_CODE:
+      json_path: "naicCode"
+    POLICY_NUMBER:
+      json_path: "policyNumber"
+    TERM_BEGIN_DATE:
+      json_path: "policyEffectiveDate"
+    TERM_END_DATE:
+      json_path: "policyExpirationDate"
+    TRANS_EFFECT_DATE:
+      json_path: "transactionEffectiveDate"
+    INSURED_NAME:
+      json_path: "legalTypePolicyholder.businessName"
+
+DMV_VEHICLE:
+  fields:
+    VEHICLE_ID:
+      json_path: "vehicleList[*].vehicleId"
+    RECORD_SOURCE:
+      json_path: "vehicleList[*].sourceSystem"
+    VEHICLE_DESC:
+      json_path: "vehicleList[*].vehicleCategory"
+    VIN:
+      json_path: "vehicleList[*].vin"
+    MODEL_YEAR:
+      json_path: "vehicleList[*].year"
+    MAKE:
+      json_path: "vehicleList[*].make"
+    MODEL:
+      json_path: "vehicleList[*].model"
+    REGIS_ST:
+      json_path: "vehicleList[*].registrantState"
+    LIC_PLATE_TYPE:
+      json_path: "vehicleList[*].plateType"
+    LIC_PLATE_NUMBER:
+      json_path: "vehicleList[*].plateNumber"
+    # Join with registrantList using registrantId
+    FULL_NAME:
+      json_path: "registrantList[*].businessName"  # Using businessName as a proxy for full name; adjust if needed
+
+DMV_DRIVER:
+  fields:
+    DRIVER_ID:
+      json_path: "registrantList[*].registrantId"
+    RECORD_SOURCE:
+      json_path: "registrantList[*].sourceSystem"
+    SUB_ENTITY_TYPE:
+      json_path: "registrantList[*].legalType"
+    FULL_NAME:
+      json_path: "registrantList[*].businessName"  # Using businessName as a proxy; adjust if needed
+    FEDERAL_ID:
+      json_path: "registrantList[*].fein"
