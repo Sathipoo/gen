@@ -1,61 +1,130 @@
 DMV_POLICY:
   fields:
     BUSINESS_UNIT_CD:
-      json_path: "businessUnit"
+      json_path: businessUnit
     TRANS_CODE:
-      json_path: "transactionType"
+      json_path: transactionType
     RECORD_SOURCE:
-      json_path: "sourceSystem"
+      json_path: sourceSystem
+    POLICY_STATUS_CD:
+      json_path: policyStatus
     COMPANY_NAME:
-      json_path: "companyName"
+      json_path: companyName
     NAIC_CODE:
-      json_path: "naicCode"
+      json_path: naicCode
+    ROWID:
+      json_path: policyRowId
+    POLICY_SYMBOL_CD:
+      json_path: policySymbol
     POLICY_NUMBER:
-      json_path: "policyNumber"
+      json_path: policyNumber
+    POLICY_MODULE_CD:
+      json_path: policyMod
+    POLICY_VERSION_CD:
+      json_path: policyVersion
     TERM_BEGIN_DATE:
-      json_path: "policyEffectiveDate"
+      json_path: policyEffectiveDate
     TERM_END_DATE:
-      json_path: "policyExpirationDate"
+      json_path: policyExpirationDate
     TRANS_EFFECT_DATE:
-      json_path: "transactionEffectiveDate"
+      json_path: transactionEffectiveDate
+    TRANS_ID:
+      json_path: transactionRowId
+    SUB_ENTITY_TYPE:
+      json_path: legalType
     INSURED_NAME:
-      json_path: "legalTypePolicyholder.businessName"
-
-DMV_VEHICLE:
-  fields:
-    VEHICLE_ID:
-      json_path: "vehicleList[*].vehicleId"
-    RECORD_SOURCE:
-      json_path: "vehicleList[*].sourceSystem"
-    VEHICLE_DESC:
-      json_path: "vehicleList[*].vehicleCategory"
-    VIN:
-      json_path: "vehicleList[*].vin"
-    MODEL_YEAR:
-      json_path: "vehicleList[*].year"
-    MAKE:
-      json_path: "vehicleList[*].make"
-    MODEL:
-      json_path: "vehicleList[*].model"
-    REGIS_ST:
-      json_path: "vehicleList[*].registrantState"
-    LIC_PLATE_TYPE:
-      json_path: "vehicleList[*].plateType"
-    LIC_PLATE_NUMBER:
-      json_path: "vehicleList[*].plateNumber"
-    # Join with registrantList using registrantId
-    FULL_NAME:
-      json_path: "registrantList[*].businessName"  # Using businessName as a proxy for full name; adjust if needed
+      json_path: businessPolicyholder.businessName
+    FEDERAL_ID:
+      json_path: businessPolicyholder.fein
+    ADDRESS_LINE_1:
+      json_path: policyholderAddress.address1
+    ADDRESS_LINE_2:
+      json_path: policyholderAddress.address2
+    CITY:
+      json_path: policyholderAddress.city
+    STATE:
+      json_path: policyholderAddress.state
+    POSTAL_CODE:
+      json_path: policyholderAddress.zip
+    CANCELLATION_REASON_CD:
+      json_path: cancellationReason
+    CANCELLATION_REASON_DESC:
+      json_path: cancellationReasonDescription
+    NONRENEWAL_REASON_CD:
+      json_path: nonRenewalReason
+    NONRENEWAL_REASON_DESC:
+      json_path: nonRenewalReasonDescription
+    LAST_UPDATED_BY:
+      json_path: lastUpdatedBy
 
 DMV_DRIVER:
   fields:
     DRIVER_ID:
-      json_path: "registrantList[*].registrantId"
+      json_path: registrantList[].registrantId
+    STATE_ID: # Assuming STATE_ID is also part of the composite key with DRIVER_ID - clarification needed if separate path exists
+      json_path: registrantList[].registrantId # Using same path as DRIVER_ID, adjust if STATE_ID has different source
+    ROWID:
+      json_path: registrantList[].registrantRowId
     RECORD_SOURCE:
-      json_path: "registrantList[*].sourceSystem"
+      json_path: registrantList[].sourceSystem
+    ACTION_CD:
+      json_path: registrantList[].actionCode
     SUB_ENTITY_TYPE:
-      json_path: "registrantList[*].legalType"
+      json_path: registrantList[].legalType
     FULL_NAME:
-      json_path: "registrantList[*].businessName"  # Using businessName as a proxy; adjust if needed
+      json_path: registrantList[].businessRegistrant.businessName
     FEDERAL_ID:
-      json_path: "registrantList[*].fein"
+      json_path: registrantList[].businessRegistrant.fein
+    FIRST_NAME:
+      json_path: registrantList[].individualRegistrant.firstName
+    MIDDLE_INITIAL:
+      json_path: registrantList[].individualRegistrant.middleInitial
+    LAST_NAME:
+      json_path: registrantList[].individualRegistrant.lastName
+    NAME_SUFFIX:
+      json_path: registrantList[].individualRegistrant.suffix
+    DATE_OF_BIRTH:
+      json_path: registrantList[].individualRegistrant.dob
+    DRIVERS_LIC_NUMBER:
+      json_path: registrantList[].individualRegistrant.driversLicenseNumber
+    DRIVERS_LIC_STATE:
+      json_path: registrantList[].individualRegistrant.driversLicenseState
+
+DMV_VEHICLE:
+  fields:
+    VEHICLE_ID:
+      json_path: vehicleList[].vehicleId
+    ROW_ID:
+      json_path: vehicleList[].vehicleRowId
+    ACTION_CD:
+      json_path: vehicleList[].actionCode
+    RECORD_SOURCE:
+      json_path: vehicleList[].sourceSystem
+    VEHICLE_CATEGORY:
+      json_path: vehicleList[].vehicleCategory
+    VIN:
+      json_path: vehicleList[].vin
+    MODEL_YEAR:
+      json_path: vehicleList[].year
+    MAKE:
+      json_path: vehicleList[].make
+    MODEL:
+      json_path: vehicleList[].model
+    REGIS_ST:
+      json_path: vehicleList[].registrantState
+    DRIVER_ID:
+      json_path: vehicleList[].registrantId
+    LIC_PLATE_TYPE:
+      json_path: vehicleList[].plateType
+    LIC_PLATE_NUMBER:
+      json_path: vehicleList[].plateNumber
+    REGIS_ADDR_LINE_1:
+      json_path: registrantList[].registrantAddress.address1
+    REGIS_ADDR_LINE_2:
+      json_path: registrantList[].registrantAddress.address2
+    REGIS_ADDR_CITY:
+      json_path: registrantList[].registrantAddress.city
+    REGIS_ADDR_ST:
+      json_path: registrantList[].registrantAddress.state
+    REGIS_ADDR_ZIP:
+      json_path: registrantList[].registrantAddress.zip
