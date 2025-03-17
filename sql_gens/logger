@@ -1,26 +1,16 @@
 import logging
 import os
 
-def get_logger(name, log_level=logging.INFO, log_file=None):
+def get_logger(name, log_level=logging.INFO, log_file=None, date_format="%Y-%m-%d %H:%M:%S"): #Add date_format parameter
     """
     Creates and returns a logger with specified name, level, and optional file handler.
-
-    Args:
-        name (str): The name of the logger. Typically __name__.
-        log_level (int): The logging level (e.g., logging.INFO, logging.DEBUG).
-        log_file (str, optional): The path to the log file. If None, logs to console.
-
-    Returns:
-        logging.Logger: The configured logger.
     """
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
 
-    if not logger.handlers:  # Prevent adding duplicate handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
+    if not logger.handlers:
+        formatter = logging.Formatter(f'%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt=date_format) #Modify the formatter
         if log_file:
-            #Ensure the directory exists.
             os.makedirs(os.path.dirname(log_file), exist_ok=True)
             file_handler = logging.FileHandler(log_file)
             file_handler.setFormatter(formatter)
@@ -32,20 +22,6 @@ def get_logger(name, log_level=logging.INFO, log_file=None):
 
     return logger
 
-# Example usage within a script:
 if __name__ == "__main__":
-    #Example of creating a directory and logfile.
-    log_dir = "logs"
-    log_file_path = os.path.join(log_dir, "my_script.log")
-
-    my_logger = get_logger(__name__, log_level=logging.DEBUG, log_file=log_file_path)
-
-    my_logger.debug("This is a debug message.")
-    my_logger.info("This is an info message.")
-    my_logger.warning("This is a warning message.")
-    my_logger.error("This is an error message.")
-    my_logger.critical("This is a critical message.")
-
-    #Example of console logging
-    console_logger = get_logger("console_log")
-    console_logger.info("This will log to console")
+    my_logger = get_logger(__name__, log_level=logging.INFO, date_format="%d/%m/%Y %I:%M:%S %p") #example of changing format
+    my_logger.info("Test message with custom date format.")
