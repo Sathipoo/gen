@@ -1,0 +1,19 @@
+{
+  "columns": {
+    "name": {
+      "type": "default",
+      "value": "REDACTED"
+    },
+    "ssn": {
+      "type": "random_ssn"
+    },
+    "email": {
+      "type": "random_string",
+      "length": 15
+    },
+    "phone": {
+      "type": "default",
+      "value": "XXX-XXX-XXXX"
+    }
+  }
+}
