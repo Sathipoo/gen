@@ -38,6 +38,55 @@ def setup_logger(input_key):
     )
     return logging.getLogger(__name__)
 
+import logging
+import os
+from datetime import datetime
+
+def setup_logger(input_key):
+    """
+    Set up logger with dynamic log file name including datetime stamp.
+    Also prints log to console.
+    """
+    # Extract base name (file without extension) from the input key
+    base_name = os.path.basename(input_key).split('.')[0]
+    
+    # Generate a timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    # Define log directory (change "logs" to whatever directory you want)
+    log_dir = "logs"
+    # Create the directory if not exists
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # Construct the full log file path
+    log_filename = f"{log_dir.rstrip('/')}/data_redaction_{base_name}_{timestamp}.log"
+    
+    # Create a custom logger (use __name__ or any other name you like)
+    logger = logging.getLogger(__name__)
+    
+    # Set the minimum logging level for this logger
+    logger.setLevel(logging.INFO)
+    
+    # Create a file handler that writes to log_filename
+    file_handler = logging.FileHandler(log_filename, mode='w')
+    file_handler.setLevel(logging.INFO)
+    
+    # Create a console (stream) handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    
+    # Define a common formatter for both handlers
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    # Add both handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger
+
 def redact_data(df, config, logger):
     """Redact data based on configuration"""
     try:
