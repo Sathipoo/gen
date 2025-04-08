@@ -6,32 +6,20 @@ from datetime import datetime
 from dmv_load_params import get_env_params
 import dmv_functions
 
-def apply_dynamic_schema_modifications(input_json, schema_json, logger):
-    """
-    Dynamically updates the schema based on the input JSON's 'transactionType'.
-    - If transactionType is 'CA': cancellationReason becomes required.
-    - If transactionType is 'RI': reinstatementReason becomes required.
-    """
-    transaction_type = input_json.get("transactionType", "").upper()
-    logger.info("Applying dynamic modifications for transactionType: %s", transaction_type)
-    
-    if "cancellationReason" in schema_json:
-        if transaction_type == "CA":
-            logger.info("Setting cancellationReason as required based on transactionType 'CA'.")
-            schema_json["cancellationReason"]["isrequired"] = "required"
-        else:
-            logger.info("Setting cancellationReason as optional.")
-            schema_json["cancellationReason"]["isrequired"] = "optional"
-
-    if "reinstatementReason" in schema_json:
-        if transaction_type == "RI":
-            logger.info("Setting reinstatementReason as required based on transactionType 'RI'.")
-            schema_json["reinstatementReason"]["isrequired"] = "required"
-        else:
-            logger.info("Setting reinstatementReason as optional.")
-            schema_json["reinstatementReason"]["isrequired"] = "optional"
-    
-    return schema_json
+def apply_dynamic_schema_modifications_registrantList(item, field_schema, errors, logger):
+    legalType = item.get("legalType", "").upper()
+    logger.info("Modifying registrantList schema for legalType: %s", legalType)
+    if legalType.strip() == "B":
+        field_schema['items']['businessRegistrant']['isrequired'] = "required"
+        field_schema['items']["individualRegistrant"]["isrequired"] = "optional"
+        logger.info(f"the new status of businessRegistrant is : {field_schema['items']['businessRegistrant']['isrequired']} ")
+    elif legalType.strip() == "I":
+        field_schema['items']['businessRegistrant']['isrequired'] = "optional"
+        field_schema['items']["individualRegistrant"]["isrequired"] = "required"
+        logger.info(f"the new status of individualRegistrant is : {field_schema['items']['individualRegistrant']['isrequired']} ")
+    else:
+        errors.append(f"Modifying registrantList schema did not qualify for the provided legatype: {legalType}")
+    return field_schema, errors
 
 def validate_schema(input_json, schema_json, logger):
     """
@@ -88,6 +76,10 @@ def validate_schema(input_json, schema_json, logger):
                     if "items" in field_schema and input_value:
                         logger.info("Validating array items for key '%s'.", key)
                         for i, item in enumerate(input_value):
+                            if key == 'registrantList':
+                                logger.info("registrantList object identified, executing the funciton apply_dynamic_schema_modifications_registrantList")
+                                field_schema, errors = apply_dynamic_schema_modifications_registrantList(item, field_schema, errors, logger)
+                            # logger.info(json.dumps(field_schema,indent=2))
                             logger.info("Validating array item %s for key '%s'.", i, key)
                             item_errors = validate_schema(item, field_schema["items"], logger)
                             if item_errors:
@@ -109,22 +101,9 @@ def main_validate(env_params, input_payload_json, logger):
         logger.info("Loading input JSON from %s.", input_payload_json)
         with open(input_payload_json, 'r') as f:
             input_json = json.load(f)
+
+        schema_json = dmv_functions.load_struct_file(input_json, env_params, logger)
         
-        policyStatus = input_json['policyStatus']
-        if policyStatus.upper() == "I":
-            struct_file = env_params['structure_json_file']["I"]
-        elif policyStatus.upper() == "B":
-            struct_file = env_params['structure_json_file']["B"]
-        else:
-            logger.error("Unhandled policyStatus: %s", policyStatus)
-            raise Exception("Unhandled policyStatus")
-        
-        logger.info("The policyStatus is %s; loading schema from %s", policyStatus, struct_file)
-        with open(struct_file, 'r') as f:
-            schema_json = json.load(f)
-        
-        # Apply dynamic schema modifications based on transactionType.
-        schema_json = apply_dynamic_schema_modifications(input_json, schema_json, logger)
         logger.info("Starting schema validation.")
         errors = validate_schema(input_json, schema_json, logger)
         return errors
@@ -159,7 +138,7 @@ if __name__ == "__main__":
             logger.error("The provided JSON does not match the schema. Errors:")
             for err in errors:
                 logger.error(" - %s", err)
-            raise Exception("Validation failed with errors.")
+            raise Exception("The provided JSON do not match")
         else:
             logger.info("The provided JSON matches the schema.")
             
