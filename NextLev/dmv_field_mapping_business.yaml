@@ -1,0 +1,300 @@
+DMV_POLICY:
+  table_name: DMV_STAGING_DOWNSTREAM.DMV_POLICY_STAGING
+  insert_field_mapping:
+    fields:
+      ROW_ID: # Missing, added
+        value: NULL
+      SUBM_ID: # Missing, added
+        value: NULL
+      SOURCE_TRANS_ID: # Missing, added
+        value: NULL
+      SOURCE_BUSN_DT: # Missing, added
+        value: NULL
+      TRANS_ID: # Missing, added
+        value: NULL
+      AM_BEST_NUMBER: # Missing, added
+        value: NULL
+      POLICY_SYMBOL_CD:
+        json_path: policySymbol
+      POLICY_NUMBER:
+        json_path: policyNumber
+      POLICY_MODULE_CD:
+        json_path: policyMod
+      POLICY_VERSION_CD:
+        json_path: policyVersion
+      LINE_OF_BUSINESS: # Missing, added
+        value: NULL
+      BUSINESS_UNIT_CD:
+        json_path: businessUnit
+      TRANS_EFFECT_DATE:
+        json_path: transactionEffectiveDate
+      NAIC_CODE:
+        json_path: company.naicCode
+      COMPANY_NAME:
+        json_path: company.name
+      POLICY_CLASS: # Missing, added
+        value: NULL
+      INCEPTION_DATE: # Missing, added
+        value: NULL
+      TERM_BEGIN_DATE:
+        json_path: policyEffectiveDate
+      TERM_END_DATE:
+        json_path: policyExpirationDate
+      CANCELLATION_DATE: # Missing, added
+        value: NULL
+      POLICY_STATUS_CD:
+        json_path: policyStatus
+      SUB_ENTITY_TYPE:
+        json_path: legalType
+      INSURED_NAME:
+        json_path: businessPolicyholder.businessName
+      FEDERAL_ID:
+        json_path: businessPolicyholder.fein
+      FIRST_NAME: # Missing, added
+        value: NULL
+      MIDDLE_INITIAL: # Missing, added
+        value: NULL
+      LAST_NAME: # Missing, added
+        value: NULL
+      NAME_SUFFIX: # Missing, added
+        value: NULL
+      DATE_OF_BIRTH: # Missing, added
+        value: NULL
+      DRIVERS_LIC_NUMBER: # Missing, added
+        value: NULL
+      DRIVERS_LIC_STATE: # Missing, added
+        value: NULL
+      ADDRESS_TYPE: # Missing, added
+        value: NULL
+      ADDRESS_LINE_1:
+        json_path: policyholderAddress.address1
+      ADDRESS_LINE_2:
+        json_path: policyholderAddress.address2
+      CITY:
+        json_path: policyholderAddress.city
+      STATE:
+        json_path: policyholderAddress.state
+      POSTAL_CODE:
+        json_path: policyholderAddress.zip
+      COUNTRY_CODE: # Missing, added
+        value: NULL
+      TRANS_CODE:
+        json_path: transactionType
+      RECORD_ACTIVE_IND:
+        value: 1  
+        datatype: int
+      SOURCE_SYSTEM_CD: # Missing, renamed RECORD_SOURCE
+        json_path: sourceSystem
+      # Removed fields not in DDL:
+      # CANCELLATION_REASON_CD
+      # CANCELLATION_REASON_DESC
+      # NONRENEWAL_REASON_CD
+      # NONRENEWAL_REASON_DESC
+      # DATA_SOURCE
+
+DMV_DRIVER:
+  table_name: DMV_STAGING_DOWNSTREAM.DMV_DRIVER_STAGING
+  insert_field_mapping:
+    fields:
+      ROW_ID: # Missing, added
+        value: NULL
+        datatype: string
+      SOURCE_TRANS_ID: # Missing, added
+        value: NULL
+        datatype: string
+      SOURCE_BUSN_DT: # Missing, added
+        value: NULL
+        datatype: string
+      PARTY_ID: # Missing, added
+        value: NULL
+        datatype: string
+      TRANS_ID: # Missing, added
+        value: NULL
+        datatype: string
+      VEHICLE_ID: # Missing, added
+        value: NULL
+        datatype: string
+      DRIVER_ID:
+        json_path: registrantList[].registrantId
+      STATE_ID:
+        json_path: registrantList[].registrantId
+      UNIT_NO: # Missing, added
+        value: NULL
+        datatype: string
+      REL_TO_POL_HOLDER: # Missing, added
+        value: NULL
+        datatype: string
+      LAST_NAME:
+        json_path: registrantList[].individualRegistrant.lastName
+      FIRST_NAME:
+        json_path: registrantList[].individualRegistrant.firstName
+      MIDDLE_INITIAL:
+        json_path: registrantList[].individualRegistrant.middleInitial
+      NAME_SUFFIX:
+        json_path: registrantList[].individualRegistrant.suffix
+      DATE_OF_BIRTH:
+        json_path: registrantList[].individualRegistrant.dob
+      GENDER: # Missing, added
+        value: NULL
+        datatype: string
+      DRIVERS_LIC_NUMBER:
+        json_path: registrantList[].individualRegistrant.driversLicenseNumber
+      DRIVERS_LIC_STATE:
+        json_path: registrantList[].individualRegistrant.driversLicenseState
+      NAME_TYPE: # Missing, added
+        value: NULL
+        datatype: string
+      FULL_NAME:
+        json_path: registrantList[].businessRegistrant.businessName
+      FEDERAL_ID:
+        json_path: registrantList[].businessRegistrant.fein
+      SUB_ENTITY_TYPE:
+        json_path: registrantList[].legalType
+      ACTION_CD:
+        json_path: registrantList[].actionCode
+      RECORD_ACTIVE_IND:
+        value: 1  
+        datatype: int
+      SOURCE_SYSTEM_CD: # Missing, renamed RECORD_SOURCE
+        json_path: registrantList[].sourceSystem
+      TRANS_EFFECT_DATE: # Moved to match DDL order
+        json_path: registrantList[].transactionEffectiveDate
+
+DMV_VEHICLE:
+  table_name: DMV_STAGING_DOWNSTREAM.DMV_VEHICLE_STAGING
+  insert_field_mapping:
+    fields:
+      ROW_ID: # Missing, added
+        value: NULL
+      SOURCE_TRANS_ID: # Missing, added
+        value: NULL
+      SOURCE_BUSN_DT: # Missing, added
+        value: NULL
+      RISK_HIST_ID: # Missing, added
+        value: NULL
+      TRANS_ID: # Missing, added
+        value: NULL
+      VEHICLE_ID:
+        json_path: vehicleList[].vehicleId
+      PAS_PROPERTY_ID: # Missing, added
+        value: NULL
+      VIN:
+        json_path: vehicleList[].vin
+      MAKE:
+        json_path: vehicleList[].make
+      MODEL:
+        json_path: vehicleList[].model
+      MODEL_YEAR:
+        json_path: vehicleList[].year
+      DEDUCTIBLE_1: # Missing, added (corrected spelling)
+        value: NULL
+      DEDUCTIBLE_2: # Missing, added (corrected spelling)
+        value: NULL
+      REGIS_ST:
+        json_path: vehicleList[].registrantState
+      REGIS_ADDR_TYPE: # Missing, added
+        value: NULL
+      REGIS_ADDR_LINE_1:
+        json_path: registrantList[].registrantAddress.address1
+      REGIS_ADDR_LINE_2:
+        json_path: registrantList[].registrantAddress.address2
+      REGIS_ADDR_CITY:
+        json_path: registrantList[].registrantAddress.city
+      REGIS_ADDR_ST:
+        json_path: registrantList[].registrantAddress.state
+      REGIS_ADDR_ZIP:
+        json_path: registrantList[].registrantAddress.zip
+      REGIS_ADDR_COUNTRY: # Missing, added
+        value: NULL
+      FLEET_COUNT: # Missing, added
+        value: NULL
+      OUT_OF_ST_INSUR: # Missing, added
+        value: NULL
+      GRAY_FLAG: # Missing, added
+        value: NULL
+      GARAGE_TOWN: # Missing, added
+        value: NULL
+      PREMIUM_TOWN: # Missing, added
+        value: NULL
+      LIC_PLATE_TYPE:
+        json_path: vehicleList[].plateType
+      LIC_PLATE_TYPE_COL: # Missing, added
+        value: NULL
+      UNPAID_PREMIUM: # Missing, added
+        value: NULL
+      BINDER_NUMBER: # Missing, added
+        value: NULL
+      REGIS_ENTITY_TYPE: # Missing, added
+        value: NULL
+      REGIS_DRVR_LIC_NUM: # Missing, added
+        value: NULL
+      REGIS_DRVR_LIC_ST: # Missing, added
+        value: NULL
+      REGIS_SSN: # Missing, added
+        value: NULL
+      REGIS_FEDERAL_ID: # Missing, added
+        value: NULL
+      REGIS_ST_ID:
+        json_path: vehicleList[].registrantId
+      LIC_PLATE_NUMBER:
+        json_path: vehicleList[].plateNumber
+      REGIS_NUMBER: # Missing, added
+        value: NULL
+      VEHICLE_CATEGORY:
+        json_path: vehicleList[].vehicleType.code
+      SHORT_DESC:
+        json_path: vehicleList[].vehicleType.name
+      ACTION_CD:
+        json_path: vehicleList[].actionCode
+      RECORD_ACTIVE_IND:
+        value: 1  
+        datatype: int
+      SOURCE_SYSTEM_CD: # Missing, renamed RECORD_SOURCE
+        json_path: vehicleList[].sourceSystem
+      TRANS_EFFECT_DATE: # Moved to match DDL order
+        json_path: vehicleList[].transactionEffectiveDate
+
+DMV_TRANSACTION:
+  table_name: DMV_STAGING_DOWNSTREAM.DMV_TRANSACTIONS
+  insert_field_mapping:
+    fields:
+      TRANS_ID: # Missing, added
+        value: NULL
+      TRANS_TYPE:
+        json_path: transactionType
+      TRANS_EFFECTIVE_DATE:
+        json_path: transactionEffectiveDate
+      TRANS_TMSTP:
+        value: current_timestamp()
+        datatype: datetime
+      POLICY_SYMBOL_CD:
+        json_path: policySymbol
+      POLICY_NUMBER:
+        json_path: policyNumber
+      POLICY_MODULE_CD:
+        json_path: policyMod
+      SOURCE_SYSTEM_CD: # Missing, renamed SOURCE
+        value: 'ENTRY_APP'
+        datatype: string
+      SOURCE_TRANS_ID: # Missing, added
+        value: NULL
+      SOURCE_CREATE_TMSTP: # Missing, added
+        value: NULL
+      STATUS:
+        value: 'NEW'
+        datatype: string
+      ERROR_DESC: # Missing, added
+        value: NULL
+      SENT_TO_VENDOR_TMSTP: # Missing, added
+        value: NULL
+      CREATED_BY: # Missing, added
+        value: NULL
+      CREATED_TMSTP:
+        value: current_timestamp()
+        datatype: datetime
+      UPDATED_BY: # Missing, added
+        value: NULL
+      UPDATED_TMSTP: # Missing, added
+        value: NULL
+      ORIG_TRANS_TYPE: # Missing, added
+        value: NULL
