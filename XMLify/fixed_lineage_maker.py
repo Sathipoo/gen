@@ -65,22 +65,39 @@ class FixedInformaticaLineageFramework:
         
         # Parse transformations
         if "TRANSFORMATION" in json_data:
-            for trans_data in json_data["TRANSFORMATION"]:
+            trans_data = json_data["TRANSFORMATION"]
+            # Handle both single transformation and list of transformations
+            if isinstance(trans_data, dict):
                 trans = self._parse_transformation(trans_data)
                 self.transformations[trans.name] = trans
+            elif isinstance(trans_data, list):
+                for trans_data_item in trans_data:
+                    trans = self._parse_transformation(trans_data_item)
+                    self.transformations[trans.name] = trans
         
         # Parse instances
         if "INSTANCE" in json_data:
-            for instance in json_data["INSTANCE"]:
-                self.instances[instance["@NAME"]] = instance
-                if instance["@TYPE"] == "SOURCE":
-                    self.sources.append(instance["@NAME"])
-                elif instance["@TYPE"] == "TARGET":
-                    self.targets.append(instance["@NAME"])
+            instance_data = json_data["INSTANCE"]
+            # Handle both single instance and list of instances
+            if isinstance(instance_data, dict):
+                self.instances[instance_data["@NAME"]] = instance_data
+                if instance_data["@TYPE"] == "SOURCE":
+                    self.sources.append(instance_data["@NAME"])
+                elif instance_data["@TYPE"] == "TARGET":
+                    self.targets.append(instance_data["@NAME"])
+            elif isinstance(instance_data, list):
+                for instance in instance_data:
+                    self.instances[instance["@NAME"]] = instance
+                    if instance["@TYPE"] == "SOURCE":
+                        self.sources.append(instance["@NAME"])
+                    elif instance["@TYPE"] == "TARGET":
+                        self.targets.append(instance["@NAME"])
         
         # Parse connections
         if "CONNECTOR" in json_data:
-            for conn_data in json_data["CONNECTOR"]:
+            conn_data = json_data["CONNECTOR"]
+            # Handle both single connection and list of connections
+            if isinstance(conn_data, dict):
                 conn = Connection(
                     from_instance=conn_data["@FROMINSTANCE"],
                     from_field=conn_data["@FROMFIELD"],
@@ -90,15 +107,29 @@ class FixedInformaticaLineageFramework:
                     to_type=conn_data.get("@TOINSTANCETYPE", "")
                 )
                 self.connections.append(conn)
+            elif isinstance(conn_data, list):
+                for conn_item in conn_data:
+                    conn = Connection(
+                        from_instance=conn_item["@FROMINSTANCE"],
+                        from_field=conn_item["@FROMFIELD"],
+                        to_instance=conn_item["@TOINSTANCE"],
+                        to_field=conn_item["@TOFIELD"],
+                        from_type=conn_item.get("@FROMINSTANCETYPE", ""),
+                        to_type=conn_item.get("@TOINSTANCETYPE", "")
+                    )
+                    self.connections.append(conn)
         
         # Parse target load order
         if "TARGETLOADORDER" in json_data:
+            target_order_data = json_data["TARGETLOADORDER"]
             try:
-                for target_order in json_data["TARGETLOADORDER"]:
-                    self.target_load_order[target_order["@TARGETINSTANCE"]] = int(target_order["@ORDER"])
+                # Handle both single target order and list of target orders
+                if isinstance(target_order_data, dict):
+                    self.target_load_order[target_order_data["@TARGETINSTANCE"]] = int(target_order_data["@ORDER"])
+                elif isinstance(target_order_data, list):
+                    for target_order in target_order_data:
+                        self.target_load_order[target_order["@TARGETINSTANCE"]] = int(target_order["@ORDER"])
             except:
-                # self.target_load_order[json_data["@TARGETINSTANCE"]] = int(target_order["@ORDER"])
-                # print(json_data["@TARGETINSTANCE"])
                 pass
     
     def _parse_transformation(self, trans_data: Dict) -> Transformation:
