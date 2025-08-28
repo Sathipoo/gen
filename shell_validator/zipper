@@ -1,0 +1,14 @@
+@echo off
+set src=\\dcal-fls.resources.iamacc.austincc.edu\Informatica\Infa_Dev\Source\ThirdParty\TSI\ProcessingFiles
+set dest=\\dcal-fls.resources.iamacc.austincc.edu\Informatica\Infa_Dev\Source\ThirdParty\TSI\Archive
+
+:: Define zip file name with timestamp
+set zipfile=%dest%\ProcessingFiles_%date:~-4%%date:~4,2%%date:~7,2%_%time:~0,2%%time:~3,2%.zip
+
+:: Use PowerShell to zip all XML files
+powershell -command "Compress-Archive -Path '%src%\*.xml' -DestinationPath '%zipfile%' -Force"
+
+:: Optional: delete the original XML files after zipping
+del "%src%\*.xml"
+
+echo Files have been zipped and moved to %zipfile%
