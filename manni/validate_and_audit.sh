@@ -7,6 +7,10 @@ CONFIG_FILE="/Users/sathishkumar/Documents/MACMIX/Miami_work/Nov_2025/test_confi
 LIST_FILE_NAME="/Users/sathishkumar/Documents/MACMIX/Miami_work/Nov_2025/valid_files_list.txt"
 AUDIT_FILE_NAME="/Users/sathishkumar/Documents/MACMIX/Miami_work/Nov_2025/audit_report.csv"
 REJECTION_LIST_FILE_NAME="/Users/sathishkumar/Documents/MACMIX/Miami_work/Nov_2025/rejection_list.txt"
+ARCHIVE_PATH="/Users/sathishkumar/Documents/MACMIX/Miami_work/Nov_2025/archive"
+
+# Create archive directory if it doesn't exist
+mkdir -p "$ARCHIVE_PATH"
 
 # Initialize output files
 > "$LIST_FILE_NAME"
@@ -55,7 +59,7 @@ find "$SOURCE_PATH" -maxdepth 1 -type f -name "$PATTERN" -print0 | while IFS= re
     
     if [ "$is_valid" = true ]; then
         # Add to valid list
-        echo "$file" >> "$LIST_FILE_NAME"
+        echo "$filename" >> "$LIST_FILE_NAME"
         
         # Add to audit file (File Name, Size, Record Count)
         # Record count = Total lines - 1 (Header)
@@ -71,3 +75,8 @@ echo "Processing complete."
 echo "Valid files list: $LIST_FILE_NAME"
 echo "Audit report: $AUDIT_FILE_NAME"
 echo "Rejections: $REJECTION_LIST_FILE_NAME"
+
+# Archive the audit file
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+cp "$AUDIT_FILE_NAME" "$ARCHIVE_PATH/audit_report_$TIMESTAMP.csv"
+echo "Audit report archived to: $ARCHIVE_PATH/audit_report_$TIMESTAMP.csv"
