@@ -35,6 +35,13 @@ def main():
         if session_id:
             print("Login successful!")
             print(f"Session ID: {session_id}")
+            
+            # Write session ID to session_id.txt
+            session_file_path = os.path.join(script_dir, 'session_id.txt')
+            with open(session_file_path, 'w') as sf:
+                sf.write(session_id)
+            print(f"Session ID stored in {session_file_path}")
+            
             return session_id
         else:
             print("Error: sessionId not found in response.")
