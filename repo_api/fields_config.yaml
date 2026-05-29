@@ -1,0 +1,43 @@
+# Configuration mapping for Informatica Activity Log fields to export to CSV.
+# Set a field to true to include it as a column in the output CSV, or false to exclude it.
+
+"@type": false
+id: true
+type: true
+objectId: true
+objectName: true
+runId: true
+runtimeEnvironmentId: true
+startTime: true
+endTime: true
+startTimeUtc: false
+endTimeUtc: false
+state: true
+UIState: false
+failedSourceRows: true
+successSourceRows: true
+failedTargetRows: true
+successTargetRows: true
+errorMsg: true
+startedBy: true
+runContextType: false
+
+# Nested attributes inside logEntryItemAttrs
+logEntryItemAttrs:
+  CONSUMED_COMPUTE_UNITS: true
+  DTM_PDO_TYPE: false
+  IS_SERVER_LESS: false
+  OBJ_LOCATION: true
+  REQUESTED_COMPUTE_UNITS: false
+  SERVICE_TYPE: true
+  TASK_UUID: false
+  releaseVersion: false
+
+# Other top-level attributes from the activity log response
+totalSuccessRows: true
+totalFailedRows: true
+stopOnError: false
+hasStopOnErrorRecord: false
+contextExternalId: false
+parentTaskFederatedId: false
+isStopped: false
