@@ -16,52 +16,80 @@ def extract_enabled_fields(config_dict):
 
 def get_nested_val(data, path):
     """
-    Retrieve value from a nested dictionary or list of dicts using a dot-separated path.
-    If the path navigates into a list and is not a specific index, it gathers the values
-    from all items in the list and returns them as a comma-separated string.
+    Retrieve value from a dictionary using a dot-separated path.
     """
     parts = path.split('.')
     current = data
-    for i, part in enumerate(parts):
+    for part in parts:
         if isinstance(current, dict):
             current = current.get(part)
-        elif isinstance(current, list):
-            # Check if part is a numeric index
-            try:
-                idx = int(part)
-                if idx < len(current):
-                    current = current[idx]
-                else:
-                    return None
-            except ValueError:
-                # It is a key we want to extract from all elements in the list
-                remaining_path = ".".join(parts[i:])
-                sub_values = []
-                for item in current:
-                    val = get_nested_val(item, remaining_path)
-                    if val is not None:
-                        sub_values.append(str(val))
-                return ", ".join(sub_values) if sub_values else None
         else:
             return None
     return current
 
-def discover_keys_from_record(record, prefix=""):
+def flatten_activity_log(records, parent_info=None):
     """
-    Recursively discover all dot-path keys present in a JSON record.
+    Recursively flatten parent records and nested child tasks (from 'entries' or 'subTaskEntries')
+    into a flat list of dictionaries representing individual CSV rows.
+    """
+    flat_records = []
+    if not isinstance(records, list):
+        return flat_records
+        
+    for r in records:
+        if not isinstance(r, dict):
+            continue
+            
+        item = {}
+        # 1. Copy all top-level keys except list keys that need custom processing
+        for k, v in r.items():
+            if k not in ["entries", "subTaskEntries", "transformationEntries", "logEntryItemAttrs"]:
+                item[k] = v
+                
+        # 2. Add custom parent traceability fields
+        if parent_info:
+            item["parent_id"] = parent_info.get("id", "")
+            item["parent_objectName"] = parent_info.get("objectName", "")
+        else:
+            item["parent_id"] = ""
+            item["parent_objectName"] = ""
+            
+        # 3. Flatten logEntryItemAttrs nested keys into dot-notation paths
+        attrs = r.get("logEntryItemAttrs", {})
+        if isinstance(attrs, dict):
+            for attr_k, attr_v in attrs.items():
+                item[f"logEntryItemAttrs.{attr_k}"] = attr_v
+                
+        # 4. Save references to transformationEntries or sessionVariables if they are basic types
+        for list_key in ["transformationEntries", "sessionVariables"]:
+            list_val = r.get(list_key)
+            if list_val is not None:
+                item[list_key] = json.dumps(list_val) if not isinstance(list_val, (str, int, float, bool)) else list_val
+                
+        flat_records.append(item)
+        
+        # 5. Recursively process nested child tasks in 'entries' or 'subTaskEntries'
+        sub_entries = r.get("entries", [])
+        if not sub_entries:
+            sub_entries = r.get("subTaskEntries", [])
+            
+        if isinstance(sub_entries, list) and sub_entries:
+            current_parent = {
+                "id": r.get("id"),
+                "objectName": r.get("objectName")
+            }
+            flat_records.extend(flatten_activity_log(sub_entries, current_parent))
+            
+    return flat_records
+
+def discover_keys_from_flat_records(flat_records):
+    """
+    Collect all unique keys/paths present across all flattened records.
     """
     keys = set()
-    if isinstance(record, dict):
-        for k, v in record.items():
-            path = f"{prefix}.{k}" if prefix else k
-            if isinstance(v, dict):
-                keys.update(discover_keys_from_record(v, path))
-            elif isinstance(v, list) and k in ["entries", "subTaskEntries", "transformationEntries"]:
-                for item in v:
-                    if isinstance(item, dict):
-                        keys.update(discover_keys_from_record(item, path))
-            else:
-                keys.add(path)
+    for r in flat_records:
+        for k in r.keys():
+            keys.add(k)
     return keys
 
 def resolve_headers(enabled_paths):
@@ -78,7 +106,6 @@ def resolve_headers(enabled_paths):
         
     # 2. Check for duplicate column names and resolve collisions
     while True:
-        # Find duplicates
         header_counts = {}
         for path, header in resolved.items():
             header_counts[header] = header_counts.get(header, 0) + 1
@@ -87,7 +114,6 @@ def resolve_headers(enabled_paths):
         if not duplicates:
             break  # No duplicate headers remaining
             
-        # Resolve duplicates by prefixing with parent key names or adding suffix
         for path, header in list(resolved.items()):
             if header in duplicates:
                 parts = path.split('.')
@@ -112,44 +138,60 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     responses_dir = os.path.join(script_dir, 'responses')
     config_path = os.path.join(script_dir, 'fields_config.yaml')
+    sample_record_path = os.path.join(script_dir, 'sample_record.json')
     
-    # 1. Verify responses directory exists and contains JSON files
-    if not os.path.exists(responses_dir):
-        print(f"Error: Responses directory not found at {responses_dir}")
-        sys.exit(1)
-        
-    json_files = [f for f in os.listdir(responses_dir) if f.endswith('.json')]
-    json_files.sort()
+    all_raw_data = []
     
-    if not json_files:
-        print(f"No JSON response files found in {responses_dir}")
-        sys.exit(1)
-        
-    print(f"Scanning {len(json_files)} response files to discover all fields...")
-    
-    # 2. Parse all response files and discover all unique keys
-    all_records = []
-    discovered_keys = set()
-    
-    for filename in json_files:
-        filepath = os.path.join(responses_dir, filename)
-        with open(filepath, 'r') as jf:
-            try:
-                data = json.load(jf)
-                if isinstance(data, list):
-                    all_records.extend(data)
-                    for record in data:
-                        discovered_keys.update(discover_keys_from_record(record))
-            except Exception as e:
-                print(f"  - Error reading {filename}: {e}")
-                
-    if not all_records:
+    # 1. Look for response files in responses/ folder first
+    has_responses = False
+    if os.path.exists(responses_dir):
+        json_files = [f for f in os.listdir(responses_dir) if f.endswith('.json')]
+        json_files.sort()
+        if json_files:
+            has_responses = True
+            print(f"Reading response files from {responses_dir}...")
+            for filename in json_files:
+                filepath = os.path.join(responses_dir, filename)
+                with open(filepath, 'r') as jf:
+                    try:
+                        data = json.load(jf)
+                        if isinstance(data, list):
+                            all_raw_data.extend(data)
+                        elif isinstance(data, dict):
+                            all_raw_data.append(data)
+                    except Exception as e:
+                        print(f"  - Error reading {filename}: {e}")
+                        
+    # 2. Fallback to sample_record.json if no response files were loaded
+    if not all_raw_data:
+        if os.path.exists(sample_record_path):
+            print(f"No response files found. Loading fallback data from {sample_record_path}...")
+            with open(sample_record_path, 'r') as sf:
+                try:
+                    data = json.load(sf)
+                    if isinstance(data, list):
+                        all_raw_data.extend(data)
+                    elif isinstance(data, dict):
+                        all_raw_data.append(data)
+                except Exception as e:
+                    print(f"Error reading {sample_record_path}: {e}")
+                    sys.exit(1)
+        else:
+            print(f"Error: No JSON logs found in {responses_dir} and fallback file {sample_record_path} does not exist.")
+            sys.exit(1)
+            
+    # 3. Recursively flatten the log records (including parent relationships for child tasks)
+    flat_records = flatten_activity_log(all_raw_data)
+    if not flat_records:
         print("No log records found to process.")
         sys.exit(1)
         
-    print(f"Discovered {len(discovered_keys)} unique field paths in the JSON files.")
+    print(f"Successfully loaded and flattened {len(flat_records)} total records (including nested child tasks).")
     
-    # 3. Load config and auto-merge discovered keys
+    # 4. Discover all unique keys from flattened records and update config
+    discovered_keys = discover_keys_from_flat_records(flat_records)
+    print(f"Discovered {len(discovered_keys)} unique field paths.")
+    
     existing_config = {}
     if os.path.exists(config_path):
         with open(config_path, 'r') as f:
@@ -159,13 +201,13 @@ def main():
                 print(f"Warning: could not parse existing fields_config.yaml: {e}")
                 existing_config = {}
                 
-    # Update configuration with any newly discovered keys (default to False)
-    updated = False
-    # Use existing keys order first, then append newly discovered keys
+    # Merge keys: preserve values from existing, add new ones as False
     new_config = {}
+    # Use order of existing config keys first
     for k, v in existing_config.items():
         new_config[k] = v
         
+    updated = False
     for key in sorted(discovered_keys):
         if key not in new_config:
             new_config[key] = False
@@ -174,9 +216,9 @@ def main():
     if updated:
         with open(config_path, 'w') as f:
             yaml.safe_dump(new_config, f, default_flow_style=False, sort_keys=False)
-        print(f"Added newly discovered keys to fields_config.yaml (defaulted to false).")
+        print(f"Added newly discovered fields to fields_config.yaml (defaulted to false).")
         
-    # 4. Extract enabled field paths and resolve headers
+    # 5. Resolve enabled fields and headers
     enabled_paths = extract_enabled_fields(new_config)
     if not enabled_paths:
         print("Warning: No fields are enabled in fields_config.yaml. Output CSV will be empty.")
@@ -188,22 +230,21 @@ def main():
     for path in enabled_paths:
         print(f"  - {path} -> {header_mapping[path]}")
         
-    # 5. Write data to CSV
+    # 6. Write to CSV
     csv_path = os.path.join(script_dir, 'activity_logs.csv')
     try:
         with open(csv_path, 'w', newline='', encoding='utf-8') as cf:
             writer = csv.writer(cf)
             writer.writerow(csv_headers)
             
-            for record in all_records:
+            for record in flat_records:
                 row = []
                 for path in enabled_paths:
                     val = get_nested_val(record, path)
                     row.append(val if val is not None else "")
                 writer.writerow(row)
                 
-        print(f"\nSuccess! Processed {len(all_records)} records.")
-        print(f"CSV file created at: {csv_path}")
+        print(f"\nSuccess! CSV file created at: {csv_path}")
     except Exception as e:
         print(f"Error writing CSV: {e}")
         sys.exit(1)
