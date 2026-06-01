@@ -16,86 +16,65 @@ def extract_enabled_fields(config_dict):
 
 def get_nested_val(data, path):
     """
-    Retrieve value from a dictionary using a dot-separated path.
+    Retrieve value from a nested dictionary or list of dicts using a dot-separated path.
+    If the path navigates into a list and is not a specific index, it gathers the values
+    from all items in the list and returns them as a comma-separated string.
     """
     parts = path.split('.')
     current = data
-    for part in parts:
+    for i, part in enumerate(parts):
         if isinstance(current, dict):
             current = current.get(part)
+        elif isinstance(current, list):
+            # Check if part is a numeric index
+            try:
+                idx = int(part)
+                if idx < len(current):
+                    current = current[idx]
+                else:
+                    return None
+            except ValueError:
+                # It is a key we want to extract from all elements in the list
+                remaining_path = ".".join(parts[i:])
+                sub_values = []
+                for item in current:
+                    val = get_nested_val(item, remaining_path)
+                    if val is not None:
+                        # Avoid nested lists/dicts serialization or handle them cleanly
+                        if isinstance(val, (dict, list)):
+                            sub_values.append(json.dumps(val))
+                        else:
+                            sub_values.append(str(val))
+                return ", ".join(sub_values) if sub_values else None
         else:
             return None
+            
+    if isinstance(current, (dict, list)):
+        return json.dumps(current)
     return current
 
-def flatten_activity_log(records, parent_info=None):
+def discover_keys_from_record(record, prefix=""):
     """
-    Recursively flatten parent records and nested child tasks (from 'entries' or 'subTaskEntries')
-    into a flat list of dictionaries representing individual CSV rows.
-    """
-    flat_records = []
-    if not isinstance(records, list):
-        return flat_records
-        
-    for r in records:
-        if not isinstance(r, dict):
-            continue
-            
-        item = {}
-        # 1. Copy all top-level keys except list keys that need custom processing
-        for k, v in r.items():
-            if k not in ["entries", "subTaskEntries", "transformationEntries", "logEntryItemAttrs"]:
-                item[k] = v
-                
-        # 2. Add custom parent traceability fields
-        if parent_info:
-            item["parent_id"] = parent_info.get("id", "")
-            item["parent_objectName"] = parent_info.get("objectName", "")
-        else:
-            item["parent_id"] = ""
-            item["parent_objectName"] = ""
-            
-        # 3. Flatten logEntryItemAttrs nested keys into dot-notation paths
-        attrs = r.get("logEntryItemAttrs", {})
-        if isinstance(attrs, dict):
-            for attr_k, attr_v in attrs.items():
-                item[f"logEntryItemAttrs.{attr_k}"] = attr_v
-                
-        # 4. Save references to transformationEntries or sessionVariables if they are basic types
-        for list_key in ["transformationEntries", "sessionVariables"]:
-            list_val = r.get(list_key)
-            if list_val is not None:
-                item[list_key] = json.dumps(list_val) if not isinstance(list_val, (str, int, float, bool)) else list_val
-                
-        flat_records.append(item)
-        
-        # 5. Recursively process nested child tasks in 'entries' or 'subTaskEntries'
-        sub_entries = r.get("entries", [])
-        if not sub_entries:
-            sub_entries = r.get("subTaskEntries", [])
-            
-        if isinstance(sub_entries, list) and sub_entries:
-            current_parent = {
-                "id": r.get("id"),
-                "objectName": r.get("objectName")
-            }
-            flat_records.extend(flatten_activity_log(sub_entries, current_parent))
-            
-    return flat_records
-
-def discover_keys_from_flat_records(flat_records):
-    """
-    Collect all unique keys/paths present across all flattened records.
+    Recursively discover all dot-path keys present in a JSON record.
     """
     keys = set()
-    for r in flat_records:
-        for k in r.keys():
-            keys.add(k)
+    if isinstance(record, dict):
+        for k, v in record.items():
+            path = f"{prefix}.{k}" if prefix else k
+            if isinstance(v, dict):
+                keys.update(discover_keys_from_record(v, path))
+            elif isinstance(v, list) and k in ["entries", "subTaskEntries", "transformationEntries"]:
+                for item in v:
+                    if isinstance(item, dict):
+                        keys.update(discover_keys_from_record(item, path))
+            else:
+                keys.add(path)
     return keys
 
 def resolve_headers(enabled_paths):
     """
-    Resolve column headers for each path. If there are collisions,
-    automatically rename columns to avoid duplicates.
+    Resolve column headers for each path. If there are collisions (identical key names),
+    replaces dots with underscores to ensure unique, clear headers.
     """
     resolved = {}
     
@@ -104,7 +83,7 @@ def resolve_headers(enabled_paths):
         parts = path.split('.')
         resolved[path] = parts[-1]
         
-    # 2. Check for duplicate column names and resolve collisions
+    # 2. Check for duplicate column names and resolve collisions by replacing dots with underscores
     while True:
         header_counts = {}
         for path, header in resolved.items():
@@ -116,13 +95,10 @@ def resolve_headers(enabled_paths):
             
         for path, header in list(resolved.items()):
             if header in duplicates:
-                parts = path.split('.')
-                if len(parts) > 1:
-                    new_header = "_".join(parts[-2:])
-                else:
-                    new_header = path
-                    
-                if new_header == header:
+                new_header = path.replace('.', '_')
+                
+                # If still collides, append a suffix
+                if new_header == header or new_header in resolved.values():
                     suffix = 1
                     temp_header = f"{new_header}_{suffix}"
                     while temp_header in resolved.values():
@@ -143,12 +119,10 @@ def main():
     all_raw_data = []
     
     # 1. Look for response files in responses/ folder first
-    has_responses = False
     if os.path.exists(responses_dir):
         json_files = [f for f in os.listdir(responses_dir) if f.endswith('.json')]
         json_files.sort()
         if json_files:
-            has_responses = True
             print(f"Reading response files from {responses_dir}...")
             for filename in json_files:
                 filepath = os.path.join(responses_dir, filename)
@@ -180,17 +154,13 @@ def main():
             print(f"Error: No JSON logs found in {responses_dir} and fallback file {sample_record_path} does not exist.")
             sys.exit(1)
             
-    # 3. Recursively flatten the log records (including parent relationships for child tasks)
-    flat_records = flatten_activity_log(all_raw_data)
-    if not flat_records:
-        print("No log records found to process.")
-        sys.exit(1)
-        
-    print(f"Successfully loaded and flattened {len(flat_records)} total records (including nested child tasks).")
+    print(f"Loaded {len(all_raw_data)} primary task records.")
     
-    # 4. Discover all unique keys from flattened records and update config
-    discovered_keys = discover_keys_from_flat_records(flat_records)
-    print(f"Discovered {len(discovered_keys)} unique field paths.")
+    # 3. Discover all unique keys from raw records and update config
+    discovered_keys = set()
+    for record in all_raw_data:
+        discovered_keys.update(discover_keys_from_record(record))
+    print(f"Discovered {len(discovered_keys)} unique field paths in the JSON files.")
     
     existing_config = {}
     if os.path.exists(config_path):
@@ -218,7 +188,7 @@ def main():
             yaml.safe_dump(new_config, f, default_flow_style=False, sort_keys=False)
         print(f"Added newly discovered fields to fields_config.yaml (defaulted to false).")
         
-    # 5. Resolve enabled fields and headers
+    # 4. Extract enabled field paths and resolve headers
     enabled_paths = extract_enabled_fields(new_config)
     if not enabled_paths:
         print("Warning: No fields are enabled in fields_config.yaml. Output CSV will be empty.")
@@ -230,14 +200,14 @@ def main():
     for path in enabled_paths:
         print(f"  - {path} -> {header_mapping[path]}")
         
-    # 6. Write to CSV
+    # 5. Write data to CSV
     csv_path = os.path.join(script_dir, 'activity_logs.csv')
     try:
         with open(csv_path, 'w', newline='', encoding='utf-8') as cf:
             writer = csv.writer(cf)
             writer.writerow(csv_headers)
             
-            for record in flat_records:
+            for record in all_raw_data:
                 row = []
                 for path in enabled_paths:
                     val = get_nested_val(record, path)

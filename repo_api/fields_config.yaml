@@ -1,13 +1,13 @@
 # Configuration mapping for Informatica Activity Log fields to export to CSV.
 # Set a field to true to include it as a column in the output CSV, or false to exclude it.
 
+# Parent task fields
 "@type": false
 id: true
 type: true
 objectId: true
 objectName: true
 runId: true
-runtimeEnvironmentId: true
 startTime: true
 endTime: true
 startTimeUtc: false
@@ -27,16 +27,11 @@ stopOnError: false
 hasStopOnErrorRecord: false
 parentTaskFederatedId: false
 isStopped: false
-contextExternalId: false
 sessionVariables: false
 taskRuntimeInfo: false
 transformationEntries: false
 
-# Parent tracking columns for nested sub-tasks
-parent_id: true
-parent_objectName: true
-
-# Nested attributes inside logEntryItemAttrs
+# Parent task logEntryItemAttrs
 logEntryItemAttrs.CONSUMED_COMPUTE_UNITS: true
 logEntryItemAttrs.DTM_PDO_TYPE: false
 logEntryItemAttrs.IS_SERVER_LESS: false
@@ -45,3 +40,37 @@ logEntryItemAttrs.REQUESTED_COMPUTE_UNITS: false
 logEntryItemAttrs.SERVICE_TYPE: true
 logEntryItemAttrs.TASK_UUID: false
 logEntryItemAttrs.releaseVersion: false
+
+# Child task fields (prefixed with entries)
+entries.id: true
+entries.type: true
+entries.objectName: true
+entries.runId: true
+entries.runtimeEnvironmentId: true
+entries.startTime: true
+entries.endTime: true
+entries.startTimeUtc: false
+entries.endTimeUtc: false
+entries.state: true
+entries.UIState: false
+entries.failedSourceRows: true
+entries.successSourceRows: true
+entries.failedTargetRows: true
+entries.successTargetRows: true
+entries.errorMsg: true
+entries.startedBy: true
+entries.runContextType: false
+entries.logEntryItemAttrs.CONSUMED_COMPUTE_UNITS: true
+entries.logEntryItemAttrs.DTM_PDO_TYPE: false
+entries.logEntryItemAttrs.IS_SERVER_LESS: false
+entries.logEntryItemAttrs.OBJ_LOCATION: true
+entries.logEntryItemAttrs.REQUESTED_COMPUTE_UNITS: false
+entries.logEntryItemAttrs.SERVICE_TYPE: true
+entries.logEntryItemAttrs.TASK_UUID: false
+entries.logEntryItemAttrs.releaseVersion: false
+entries.totalSuccessRows: true
+entries.totalFailedRows: true
+entries.stopOnError: false
+entries.hasStopOnErrorRecord: false
+entries.contextExternalId: false
+entries.isStopped: false
