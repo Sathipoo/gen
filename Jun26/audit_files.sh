@@ -1,26 +1,16 @@
 #!/bin/bash
 
 # Script 2: Audit files listing their processed date, filename, and row count excluding the header.
-# Usage: ./audit_files.sh <lst_file> <audit_csv_file> <log_file>
+# Usage: ./audit_files.sh <lst_file> <audit_csv_file>
 
 # Check if correct number of arguments are passed
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <lst_file> <audit_csv_file> <log_file>"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <lst_file> <audit_csv_file>"
     exit 1
 fi
 
 LST_FILE="$1"
 AUDIT_FILE="$2"
-LOG_FILE="$3"
-
-# Logger helper function
-log_message() {
-    local level="$1"
-    local message="$2"
-    local timestamp
-    timestamp=$(date "+%Y-%m-%d %H:%M:%S")
-    echo "[$timestamp] [$level] $message" | tee -a "$LOG_FILE"
-}
 
 # Verify that the list file exists
 if [ ! -f "$LST_FILE" ]; then
@@ -28,16 +18,12 @@ if [ ! -f "$LST_FILE" ]; then
     exit 1
 fi
 
-# Ensure log and audit directories exist
-mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
+# Ensure audit directory exists
 mkdir -p "$(dirname "$AUDIT_FILE")" 2>/dev/null
-
-log_message "INFO" "Starting auditing process using list file '$LST_FILE'."
 
 # Initialize audit report CSV header if the file is empty or does not exist
 if [ ! -s "$AUDIT_FILE" ]; then
     echo "Processed_Date,File_Name,Row_Count" > "$AUDIT_FILE"
-    log_message "INFO" "Initialized audit report at '$AUDIT_FILE'."
 fi
 
 # Read list file line by line and audit each CSV
@@ -47,7 +33,7 @@ while IFS= read -r file_path || [ -n "$file_path" ]; do
 
     # Verify that the CSV file exists
     if [ ! -f "$file_path" ]; then
-        log_message "WARNING" "File '$file_path' not found. Skipping."
+        echo "Warning: File '$file_path' not found. Skipping."
         continue
     fi
 
@@ -71,8 +57,6 @@ while IFS= read -r file_path || [ -n "$file_path" ]; do
 
     # Append audit details to the audit file
     echo "$processed_date,$filename,$row_count" >> "$AUDIT_FILE"
-    log_message "INFO" "Audited file '$filename': Row Count = $row_count"
 
 done < "$LST_FILE"
 
-log_message "INFO" "Auditing process completed successfully."
