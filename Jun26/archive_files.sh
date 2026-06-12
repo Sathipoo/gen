@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# Script 3: Archive the processed CSV files into an archive directory with timestamp.
-# Usage: ./archive_files.sh <lst_file> <archive_directory>
+# Script 3: Archive CSV files from a source directory into an archive directory with timestamp.
+# Usage: ./archive_files.sh <src_directory> <archive_directory>
 
 # Check if correct number of arguments are passed
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <lst_file> <archive_directory>"
+    echo "Usage: $0 <src_directory> <archive_directory>"
     exit 1
 fi
 
-LST_FILE="$1"
+SRC_DIR="$1"
 ARCH_DIR="$2"
 
-# Verify that the list file exists
-if [ ! -f "$LST_FILE" ]; then
-    echo "Error: List file '$LST_FILE' does not exist."
+# Verify that the source directory exists
+if [ ! -d "$SRC_DIR" ]; then
+    echo "Error: Source directory '$SRC_DIR' does not exist."
     exit 1
 fi
 
@@ -23,17 +23,10 @@ if [ ! -d "$ARCH_DIR" ]; then
     mkdir -p "$ARCH_DIR"
 fi
 
-# Read list file line by line and move each CSV file
-while IFS= read -r file_path || [ -n "$file_path" ]; do
-    # Skip empty lines
-    [ -z "$file_path" ] && continue
-
-    # Verify that the CSV file exists before moving
-    if [ ! -f "$file_path" ]; then
-        echo "Warning: File '$file_path' not found. Cannot archive. Skipping."
-        continue
-    fi
-
+# Find all CSV files in the source directory (case-insensitive extension) and move them
+# -maxdepth 1 limits search to the top-level directory (does not recurse)
+# -type f filters for regular files
+find "$SRC_DIR" -maxdepth 1 -type f \( -name "*.csv" -o -name "*.CSV" \) -print0 | while IFS= read -r -d '' file_path; do
     filename=$(basename "$file_path")
     timestamp=$(date "+%Y%m%d%H%M%S")
 
@@ -48,6 +41,6 @@ while IFS= read -r file_path || [ -n "$file_path" ]; do
 
     # Move the file to the archive directory with the new name
     mv "$file_path" "$ARCH_DIR/$new_filename"
+done
 
-done < "$LST_FILE"
 
