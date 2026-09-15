@@ -7,3 +7,19 @@ Provide the SMTP hostname, port, authentication requirements, and permitted send
 If no SMTP relay is currently available, configure/provide one for this server.
 Optionally install s-nail/mailx if shell-based email sending is preferred. Otherwise, Python 3 can be used directly once SMTP connectivity is available.
 Once the SMTP details are available, we can test connectivity from the server and validate email delivery.
+
+
+
+Hi Team,
+Could you please provide the SMTP details required for sending emails from the Informatica Linux server?
+Specifically, please confirm:
+SMTP server/relay hostname
+Port
+Whether TLS/STARTTLS is required
+Whether authentication is required
+If authentication is required, the approved authentication method and service account details
+If authentication is not required, whether this server will be allow-listed/trusted based on IP/hostname
+Permitted sender/From email address
+Any restrictions on recipient domains or relay usage
+Confirmation that outbound connectivity from the Informatica server to the SMTP endpoint is enabled
+If possible, we would prefer an IP/hostname-based trusted relay so that credentials do not need to be stored in scripts.
